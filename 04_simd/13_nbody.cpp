@@ -10,8 +10,8 @@
 	printf("%f ", b[i]);
     printf("\n");
   }
-// 小数第二位にforを使った場合と比べて誤差が生じる。
-// TODO 原因を見つける。
+// 小数第3位にforを使った場合と比べて誤差が生じる。
+// TODO: 原因を探す
 int main() {
   const int N = 8;
   float x[N], y[N], m[N], fx[N], fy[N];
@@ -36,37 +36,35 @@ int main() {
     __m256 ryvec = _mm256_sub_ps(yivec, yvec);
 
     // compute r*r and mask
-    __m256 rtmp = _mm256_mul_ps(rxvec,rxvec);
-    rtmp = _mm256_fmadd_ps(ryvec,ryvec,rtmp);
-    __m256 mask = _mm256_cmp_ps(zero, rtmp, _CMP_NEQ_UQ);
+    __m256 rvec = _mm256_mul_ps(rxvec,rxvec);
+    rvec = _mm256_fmadd_ps(ryvec,ryvec,rvec);
+    __m256 mask = _mm256_cmp_ps(zero, rvec, _CMP_NEQ_UQ);
     //print(rtmp);
 
     // compute 1/(r*r*r)
-    __m256 rrcpvec = _mm256_rsqrt_ps(rtmp);
-    __m256 rrcp3vec =_mm256_mul_ps(rrcpvec, rrcpvec);
-    rrcp3vec =_mm256_mul_ps(rrcpvec, rrcp3vec);
+    __m256 rtmp  = rvec;
+    rtmp = _mm256_mul_ps(rtmp,rvec);
+    rtmp = _mm256_mul_ps(rtmp,rvec);
+    __m256 rrcp3vec =_mm256_rsqrt_ps(rtmp);
 
     __m256 mvec = _mm256_load_ps(m);
-    __m256 minus1 = _mm256_set1_ps(-1);
 
+    // 和をreduceで求めてから引く
+    // ここで元のプログラムに対して引き算(足し算)の順序交換が起きるから
+    // 計算結果が若干ズレたのだろうか。要検証。
     __m256 xsubvec = _mm256_mul_ps(rxvec,mvec);
     xsubvec = _mm256_mul_ps(xsubvec, rrcp3vec);
-    xsubvec = _mm256_mul_ps(xsubvec, minus1);
     xsubvec = _mm256_blendv_ps(zero, xsubvec, mask);
-    // printf("xsubvec:\n");
-    // print(xsubvec);
-    // print(zero);
 
     __m256 bvec = _mm256_permute2f128_ps(xsubvec, xsubvec,1);
     bvec = _mm256_add_ps(bvec, xsubvec);
     bvec = _mm256_hadd_ps(bvec,bvec);
     bvec = _mm256_hadd_ps(bvec,bvec);
     _mm256_store_ps(buffer, bvec);
-    fx[i] += buffer[0];
+    fx[i] -= buffer[0];
 
     __m256 ysubvec = _mm256_mul_ps(ryvec,mvec);
     ysubvec = _mm256_mul_ps(ysubvec, rrcp3vec);
-    ysubvec = _mm256_mul_ps(ysubvec, minus1);
     ysubvec = _mm256_blendv_ps(zero, ysubvec, mask);
 
     bvec = _mm256_permute2f128_ps(ysubvec, ysubvec,1);
@@ -74,11 +72,11 @@ int main() {
     bvec = _mm256_hadd_ps(bvec,bvec);
     bvec = _mm256_hadd_ps(bvec,bvec);
     _mm256_store_ps(buffer, bvec);
-    fy[i] += buffer[0];
+    fy[i] -= buffer[0];
 
     printf("%d %g %g\n",i,fx[i],fy[i]);
   }
- /* 
+ 
   printf("ans: \n");
   for(int i=0; i<N; i++) {
     fx[i] = fy[i] = 0;
@@ -93,5 +91,5 @@ int main() {
     }
     printf("%d %g %g\n",i,fx[i],fy[i]);
   }
-*/
+
 }
