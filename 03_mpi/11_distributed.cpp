@@ -26,14 +26,13 @@ int main(int argc, char** argv) {
   MPI_Datatype MPI_BODY;
   MPI_Type_contiguous(5, MPI_DOUBLE, &MPI_BODY);
   MPI_Type_commit(&MPI_BODY);
-  for(int irank=0; irank<size; irank++) {
+
     MPI_Win win;
-    MPI_Win_create(jbody, (N/size)*sizeof(double), sizeof(double), MPI_INFP_NULL, MPI_COMM_WORLD, &win);
+    MPI_Win_create(jbody, (N/size)*sizeof(struct Body), sizeof(struct Body), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+  for(int irank=0; irank<size; irank++) {
     MPI_Win_fence(0, win);
-    MPI_Put(jbody,N/size, MPI_DOUBLE, send_to, 0, N/size, MPI_DOUBLE, win);
+    MPI_Put(jbody, N/size, MPI_BODY, send_to, 0, N/size, MPI_BODY, win);
     MPI_Win_fence(0, win);
-    //MPI_Send(jbody, N/size, MPI_BODY, send_to, 0, MPI_COMM_WORLD);
-    //MPI_Recv(jbody, N/size, MPI_BODY, recv_from, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     for(int i=0; i<N/size; i++) {
       for(int j=0; j<N/size; j++) {
         double rx = ibody[i].x - jbody[j].x;
@@ -46,6 +45,7 @@ int main(int argc, char** argv) {
       }
     }
   }
+  MPI_Win_fence(0, win); // TODO (I am not sure about why we need it)
   for(int irank=0; irank<size; irank++) {
     MPI_Barrier(MPI_COMM_WORLD);
     if(irank==rank) {
