@@ -1,6 +1,5 @@
 #include <cstdio>
 #include <cstdlib>
-#include <vector>
 
 __global__ void backet_sort(int *key, int *bucket, int *offset, int n, int range, int*b)
 {
