@@ -9,7 +9,7 @@ int main (int argc, char** argv) {
   vector<int> buffer(NX*NY,1);
   hid_t file = H5Fcreate("data.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   hsize_t N[2] = {NX, NY};
-  hid_t dataspace = H5Screate_simple(2, N, NULL);
+  hid_t dataspace = H5Screate_simple(2, N, NULL);  // d=2次元の N ^ d配列
   hid_t dataset = H5Dcreate(file, "dataset", H5T_NATIVE_INT, dataspace,
 			    H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   auto tic = chrono::steady_clock::now();
